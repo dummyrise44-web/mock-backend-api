@@ -242,9 +242,9 @@ def insert_document_transaction(
         result = db.execute(
             sql,
             {
-                "p_entry_id": payload.entry_id, # generated from backend (unique)
+                "p_entry_id": payload.entry_id, # generated from backend (e.g. ID-2025-0001)
                 "p_registration_unit_name": payload.registration_unit_name, # should be existing in databsae already
-                "p_document_id": payload.document_id, # generated from backend (unique)
+                "p_document_id": payload.document_id, # generated from backend (e.g. DOC-0001-0001)
                 "p_doc_type": payload.doc_type, # should extract from quality (only for first insert of document)
                 "p_file_path": payload.file_path, # xml
                 "p_file_name": payload.file_name, # orig name
