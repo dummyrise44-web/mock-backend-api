@@ -1,0 +1,71 @@
+{
+  "reg_unit": "MNC-002",
+  "xml_file_name": "payload (1)",
+  "status": "success",
+  "message": "Batch processed with one or more errors.",
+  "status_code": 207,
+  "data": {
+    "results": [
+      {
+        "status": "success",
+        "message": "Document scanned successfully. Quality threshold met.",
+        "status_code": 200,
+        "code": "QUALITY_200",
+        "data": {
+          "docType": "philsys",
+          "decision": "accept",
+          "message": "Document scanned successfully. Quality threshold met.",
+          "similarity": {
+            "value": 30.65,
+            "metric": "mean_absdiff"
+          },
+          "quality": {
+            "score": 0.92,
+            "threshold": 0.85,
+            "ok": true,
+            "metrics": {
+              "sharpness": 98.2,
+              "colorDeltaE": 9.4
+            }
+          },
+          "qualityProcessed": true,
+          "timestamp": "2025-12-08T06:32:18.549770",
+          "runtime": {
+            "totalMs": 1072.5
+          }
+        },
+        "filename": "WoWSYbMq.png"
+      },
+      {
+        "status": "error",
+        "message": "Document quality score did not meet the required threshold.",
+        "status_code": 400,
+        "code": "QUALITY_001",
+        "details": {
+          "docType": "philsys",
+          "decision": "reject",
+          "message": "Document quality score did not meet the required threshold.",
+          "similarity": {
+            "value": 41,
+            "metric": "mean_absdiff"
+          },
+          "quality": {
+            "score": 0.837,
+            "threshold": 0.85,
+            "ok": false,
+            "metrics": {
+              "sharpness": 91,
+              "colorDeltaE": 14.3
+            }
+          },
+          "qualityProcessed": true,
+          "timestamp": "2025-12-08T06:32:18.549823",
+          "runtime": {
+            "totalMs": 253.55
+          }
+        },
+        "filename": "NBFpxwvb.jpeg"
+      }
+    ]
+  }
+}
