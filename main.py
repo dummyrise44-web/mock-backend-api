@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, UploadFile, File, Query, HTTPException, Request, Body, Form
+from fastapi import FastAPI, Depends, UploadFile, File, Query, HTTPException, Request, Body, Form, Path
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import Table, select, text
@@ -14,13 +14,13 @@ import base64
 import json
 import random
 from datetime import datetime, timezone
-
+import os
 
 app = FastAPI()
 
 # Allow requests from your frontend
 origins = [
-    "http://localhost:5173",  
+    "http://192.168.88.214:5173",  
 ]
 
 app.add_middleware(
@@ -63,12 +63,6 @@ class DocumentTransactionPayload(BaseModel):
     transaction_type_name: str
     results: Any  # JSON object
     transaction_status: str
-
-@app.get("/entries")
-def get_entries(db: Session = Depends(get_db)):
-    query = select(entries)
-    result = db.execute(query).fetchall()
-    return [dict(row) for row in result]
 
 # Upload CSV endpoint with batch inserts
 @app.post("/upload-csv/")
@@ -178,6 +172,10 @@ def get_cities(province_id: int = Query(..., description="ID of the province/dis
     
     return [{"id": c["id"], "name": c["name"], "province_district_id": c["province_district_id"]} for c in cities]
 
+@app.get("/reg-units/")
+def get_regions(db: Session = Depends(get_db)):
+    regunit = db.execute(select(registration_units)).mappings().all()
+    return [{"id": r["id"], "name": r["name"]} for r in regunit]
 
 @app.post("/registration-unit/")
 def create_registration_unit(
@@ -322,10 +320,10 @@ async def process_files(
 
     return {"processed": response_data}
 
+
 def random_filename(ext="png"):
     return ''.join(random.choices(string.ascii_letters, k=8)) + f".{ext}"
 
-# EXPECTED QUALITY JSON PER DOCUMENT
 def mock_document_result(ok=True):
     if ok:
         return {
@@ -334,19 +332,16 @@ def mock_document_result(ok=True):
             "status_code": 200,
             "code": "QUALITY_200",
             "data": {
-                "docType": "philsys",
-                "decision": "accept",
-                "message": "Document scanned successfully. Quality threshold met.",
-                "similarity": { "value": 30.65, "metric": "mean_absdiff" },
+                "doc_type": "philsys",
+                "similarity_percent": 30.65,
                 "quality": {
+                    "metric": "mean_absdiff",
                     "score": 0.92,
                     "threshold": 0.85,
-                    "ok": True,
-                    "metrics": { "sharpness": 98.2, "colorDeltaE": 9.4 }
+                    "ok": True
                 },
-                "qualityProcessed": True,
                 "timestamp": datetime.utcnow().isoformat(),
-                "runtime": { "totalMs": 1072.5 }
+                "runtime_ms": 1072.5
             },
             "filename": random_filename("png")
         }
@@ -357,55 +352,178 @@ def mock_document_result(ok=True):
             "status_code": 400,
             "code": "QUALITY_001",
             "details": {
-                "docType": "philsys",
-                "decision": "reject",
-                "message": "Document quality score did not meet the required threshold.",
-                "similarity": { "value": 41.0, "metric": "mean_absdiff" },
+                "doc_type": "philsys",
+                "similarity_percent": 41.0,
                 "quality": {
+                    "metric": "mean_absdiff",
                     "score": 0.837,
                     "threshold": 0.85,
-                    "ok": False,
-                    "metrics": { "sharpness": 91.0, "colorDeltaE": 14.3 }
+                    "ok": False
                 },
-                "qualityProcessed": True,
                 "timestamp": datetime.utcnow().isoformat(),
-                "runtime": { "totalMs": 253.55 }
+                "runtime_ms": 253.55
             },
             "filename": random_filename("jpeg")
         }
 
-# GET ALL ENTRIES PER ZIP
 @app.post("/process-zip/")
-async def process_zip(file: UploadFile = File(...)):
-    zip_bytes = await file.read()
-    zip_file = zipfile.ZipFile(io.BytesIO(zip_bytes))
+async def process_zip_single(
+    files: List[UploadFile] = File(...),
+    checks: str = Form(None)
+):
+    """
+    Accepts ZIP files and returns JSON per file/entry in the format expected:
+    One entry per file with its results inside "data.results".
+    """
+    selected_checks = checks.split(",") if checks else []
+    all_entries = []
 
-    async def stream():
+    for file in files:
+        reg_unit_name = file.filename.replace(".zip", "")
+        zip_bytes = await file.read()
+        zip_file = zipfile.ZipFile(io.BytesIO(zip_bytes))
+
         for info in zip_file.infolist():
-
             if not info.filename.endswith(".xml"):
                 continue
 
             xml_name = info.filename.replace(".xml", "")
-            reg_unit = file.filename.replace(".zip", "")
-
-            # Mock 2 documents per XML
             results = [
-                mock_document_result(True),
-                mock_document_result(False)
+                mock_document_result(True),   # success example
+                mock_document_result(False)   # error example
             ]
 
-            response_obj = {
-                "reg_unit": reg_unit,
-                "xml_file_name": xml_name,
+            entry_json = {
                 "status": "success",
                 "message": "Batch processed with one or more errors.",
                 "status_code": 207,
                 "data": {
                     "results": results
-                }
+                },
+                "file_name": xml_name,
+                "checksRun": selected_checks,
+                "registration_unit": reg_unit_name
             }
 
-            yield json.dumps(response_obj) + "\n"
+            all_entries.append(entry_json)
 
-    return StreamingResponse(stream(), media_type="application/json")
+    return JSONResponse(content=all_entries)
+
+
+@app.get("/entries/")
+def get_entries(
+    entry_id: Optional[str] = Query(None, description="Filter by entry ID"),
+    status: Optional[str] = Query(None, description="Filter by entry status"),
+    registration_unit: Optional[str] = Query(None, description="Filter by registration unit"),
+    created_from: Optional[str] = Query(None, description="Filter by created_at from date (YYYY-MM-DD)"),
+    created_to: Optional[str] = Query(None, description="Filter by created_at to date (YYYY-MM-DD)"),
+    transaction_type: Optional[str] = Query(None, description="Filter by transaction type"),
+    db: Session = Depends(get_db)
+):
+    query = text("""
+        SELECT * FROM get_entries(
+            :p_entry_id,
+            :p_entry_status,
+            :p_registration_unit,
+            :p_created_at_start,
+            :p_created_at_end,
+            :p_transaction_type
+        )
+    """)
+    
+    result = db.execute(
+        query,
+        {
+            "p_entry_id": entry_id,
+            "p_entry_status": status,
+            "p_registration_unit": registration_unit,
+            "p_created_at_start": created_from,
+            "p_created_at_end": created_to,
+            "p_transaction_type": transaction_type
+        }
+    ).mappings().all()
+
+    return result
+
+
+@app.get("/entries/{entry_id}/flagged-documents/")
+def get_flagged_documents(entry_id: str, db: Session = Depends(get_db)):
+    query = text("SELECT * FROM get_flagged_documents(:entry_id)")
+    result = db.execute(query, {"entry_id": entry_id}).mappings().all()
+    return result
+
+@app.get("/documents/{document_id}/error-transactions/")
+def get_error_transactions(document_id: str, db: Session = Depends(get_db)):
+    query = text("SELECT * FROM get_error_transactions(:document_id)")
+    result = db.execute(query, {"document_id": document_id}).mappings().all()
+    return result
+
+
+@app.get("/entries/{entry_id}/summary/")
+def get_entry_summary(entry_id: str, db: Session = Depends(get_db)):
+    query = text("SELECT * FROM get_entry_summary(:entry_id)")
+    result = db.execute(query, {"entry_id": entry_id}).mappings().first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return result
+
+@app.get("/entries/{entry_id}/documents/")
+def get_documents_by_entry(entry_id: str, db: Session = Depends(get_db)):
+    query = text("SELECT * FROM get_documents_by_entry(:entry_id)")
+    result = db.execute(query, {"entry_id": entry_id}).mappings().all()
+    return result
+
+@app.get("/{entry_id}/documents/")
+def get_documents_filtered(
+    entry_id: str = Path(..., description="Entry ID to filter documents"),
+    doc_type: Optional[str] = Query(None, description="Filter by document type"),
+    document_status: Optional[str] = Query(None, description="Filter by document status"),
+    transaction_type: Optional[str] = Query(None, description="Filter by transaction type"),
+    db: Session = Depends(get_db)
+):
+    query = text("""
+        SELECT * FROM get_documents_filtered(
+            :p_entry_id,
+            :p_doc_type,
+            :p_document_status,
+            :p_transaction_type
+        )
+    """)
+
+    result = db.execute(
+        query,
+        {
+            "p_entry_id": entry_id,
+            "p_doc_type": doc_type,
+            "p_document_status": document_status,
+            "p_transaction_type": transaction_type
+        }
+    ).mappings().all()
+
+    return result
+
+@app.get("/{entry_id}/document-transactions/")
+def get_document_transaction_results(
+    entry_id: str = Path(..., description="Entry ID"),
+    document_id: str = Query(..., description="Document ID"),
+    transaction_type: str = Query(None, description="Optional transaction type filter"),
+    db: Session = Depends(get_db)
+):
+    query = text("""
+        SELECT * FROM get_document_transaction_results(
+            :p_entry_id,
+            :p_document_id,
+            :p_transaction_type
+        )
+    """)
+
+    result = db.execute(
+        query,
+        {
+            "p_entry_id": entry_id,
+            "p_document_id": document_id,
+            "p_transaction_type": transaction_type
+        }
+    ).mappings().all()
+
+    return result

@@ -1,71 +1,181 @@
 {
-  "reg_unit": "MNC-002",
-  "xml_file_name": "payload (1)",
+  "unit": "RegUnit 1",
   "status": "success",
-  "message": "Batch processed with one or more errors.",
-  "status_code": 207,
+  "code": "INPUT_200",
+  "message": "Workflow completed. Processed: 1, Rejected: 0, Failed: 0",
   "data": {
-    "results": [
+    "workflow_id": "20251209_085223",
+    "timestamp_start": "2025-12-09T08:52:23.132289",
+    "timestamp_end": "2025-12-09T08:52:33.008725",
+    "total_entries": 1,
+    "processed": 1,
+    "rejected": 0,
+    "failed": 0,
+    "entries": [
       {
-        "status": "success",
-        "message": "Document scanned successfully. Quality threshold met.",
-        "status_code": 200,
-        "code": "QUALITY_200",
-        "data": {
-          "docType": "philsys",
-          "decision": "accept",
-          "message": "Document scanned successfully. Quality threshold met.",
-          "similarity": {
-            "value": 30.65,
-            "metric": "mean_absdiff"
+        "entry_id": "20251209_085223_entry_001",
+        "status": "completed",
+        "timestamp_start": "2025-12-09T08:52:25.304700",
+        "timestamp_end": "2025-12-09T08:52:32.984087",
+        "xml_file": "strings.xml",
+        "stages": {
+          "extraction": {
+            "status": "success",
+            "text_files": 0,
+            "image_files": 2,
+            "duration_ms": 3334.85
           },
-          "quality": {
-            "score": 0.92,
-            "threshold": 0.85,
-            "ok": true,
-            "metrics": {
-              "sharpness": 98.2,
-              "colorDeltaE": 9.4
+          "quality_check": [
+            {
+              "status": "success",
+              "score": 0.8631976964221325,
+              "threshold": 0.75,
+              "passed": true,
+              "response": {
+                "status": "success",
+                "message": "Batch processed successfully.",
+                "status_code": 200,
+                "data": {
+                  "results": [
+                    {
+                      "status": "pass",
+                      "message": "Document scanned successfully. Quality threshold met.",
+                      "status_code": 200,
+                      "code": "QUALITY_200",
+                      "data": {
+                        "docType": "philsys",
+                        "decision": "accept",
+                        "message": "Document scanned successfully. Quality threshold met.",
+                        "similarity": {
+                          "value": 0.5760814547538757,
+                          "metric": "ms_ssim"
+                        },
+                        "quality": {
+                          "metric": "doc_quality",
+                          "score": 0.8631976964221325,
+                          "threshold": 0.75,
+                          "comparison": ">=",
+                          "ok": true,
+                          "metrics": {
+                            "sharpness": 100,
+                            "colorDeltaE": 8.13036215085039,
+                            "face": {
+                              "brightness": null,
+                              "sharpness": null,
+                              "eyesOpen": null
+                            }
+                          }
+                        },
+                        "qualityProcessed": true,
+                        "timestamp": "2025-12-09T08:52:28.691009+00:00",
+                        "runtime": {
+                          "totalMs": 254.63916700027767
+                        }
+                      },
+                      "quality_gate": {
+                        "metric": "mean_absdiff",
+                        "score": 0,
+                        "threshold": 0,
+                        "comparison": "<=",
+                        "passed": true
+                      },
+                      "filename": "philsys.tiff"
+                    }
+                  ]
+                }
+              },
+              "duration_ms": 459.46
+            },
+            {
+              "status": "success",
+              "score": 0.7612946535992892,
+              "threshold": 0.75,
+              "passed": true,
+              "response": {
+                "status": "success",
+                "message": "Batch processed successfully.",
+                "status_code": 200,
+                "data": {
+                  "results": [
+                    {
+                      "status": "pass",
+                      "message": "Document scanned successfully. Quality threshold met.",
+                      "status_code": 200,
+                      "code": "QUALITY_200",
+                      "data": {
+                        "docType": "birth_cert",
+                        "decision": "accept",
+                        "message": "Document scanned successfully. Quality threshold met.",
+                        "similarity": {
+                          "value": 0.45334985852241516,
+                          "metric": "ms_ssim"
+                        },
+                        "quality": {
+                          "metric": "doc_quality",
+                          "score": 0.7612946535992892,
+                          "threshold": 0.75,
+                          "comparison": ">=",
+                          "ok": true,
+                          "metrics": {
+                            "sharpness": 100,
+                            "colorDeltaE": 19.091992032437084
+                          }
+                        },
+                        "qualityProcessed": true,
+                        "timestamp": "2025-12-09T08:52:29.230257+00:00",
+                        "runtime": {
+                          "totalMs": 777.1369189995312
+                        }
+                      },
+                      "quality_gate": {
+                        "metric": "mean_absdiff",
+                        "score": 0,
+                        "threshold": 0,
+                        "comparison": "<=",
+                        "passed": true
+                      },
+                      "filename": "birthcert.tiff"
+                    }
+                  ]
+                }
+              },
+              "duration_ms": 3815.6
             }
-          },
-          "qualityProcessed": true,
-          "timestamp": "2025-12-08T06:32:18.549770",
-          "runtime": {
-            "totalMs": 1072.5
+          ],
+          "document_authenticity": {
+            "status": "success",
+            "response": {
+              "status": "error",
+              "code": "AUTH_003",
+              "message": "[{'type': 'missing', 'loc': ('image',), 'msg': 'Field required', 'input': {}, 'url': 'https://errors.pydantic.dev/2.8/v/missing'}]"
+            },
+            "duration_ms": 58.03
           }
         },
-        "filename": "WoWSYbMq.png"
-      },
-      {
-        "status": "error",
-        "message": "Document quality score did not meet the required threshold.",
-        "status_code": 400,
-        "code": "QUALITY_001",
-        "details": {
-          "docType": "philsys",
-          "decision": "reject",
-          "message": "Document quality score did not meet the required threshold.",
-          "similarity": {
-            "value": 41,
-            "metric": "mean_absdiff"
-          },
-          "quality": {
-            "score": 0.837,
-            "threshold": 0.85,
-            "ok": false,
-            "metrics": {
-              "sharpness": 91,
-              "colorDeltaE": 14.3
-            }
-          },
-          "qualityProcessed": true,
-          "timestamp": "2025-12-08T06:32:18.549823",
-          "runtime": {
-            "totalMs": 253.55
-          }
+        "errors": [],
+        "timings": {
+          "cache_load": 317.96,
+          "total_processing_ms": 7679.36
         },
-        "filename": "NBFpxwvb.jpeg"
+        "reason": "All quality checks passed",
+        "unit": "RegUnit 1"
       }
-    ]
+    ],
+    "logs": [
+      {
+        "entry_id": "20251209_085223_entry_001",
+        "log_file": "./logs/entry_20251209_085223_entry_001/entry_20251209_085223_entry_001.json",
+        "logs": []
+      }
+    ],
+    "timings": {
+      "zip_save_ms": 353.81,
+      "zip_extract_ms": 1774.77,
+      "file_scan_ms": 11.3,
+      "parallel_processing_ms": 7710.45,
+      "result_collection_ms": 23.49,
+      "total_workflow_ms": 9882.86,
+      "cleanup_ms": 50.55
+    }
   }
 }
